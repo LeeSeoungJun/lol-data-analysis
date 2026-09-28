@@ -1,5 +1,14 @@
 # 🎮 League of Legends 개인 매치 데이터 분석
 
+## 분석 노트북
+
+| 노트북 | 분석 내용 |
+|---|---|
+| [01_gameplay_analysis.ipynb](notebooks/01_gameplay_analysis.ipynb) | 플레이 지표와 승패의 관계: KDA·CS·골드, 데스·게임 길이·요일별 승률 |
+| [02_champion_matchup_analysis.ipynb](notebooks/02_champion_matchup_analysis.ipynb) | 챔피언 선택과 조합: 내 픽, 상대 챔피언, 아군 정글 조합별 승률 |
+
+두 노트북은 동일한 솔로랭크 데이터에 중복·핵심 정보 검증, 3분 미만 경기 제외, 한국 시간 변환을 적용합니다. 주요 챔피언 비교는 10경기 이상을 기준으로 합니다. 3분 미만 제외는 정확한 다시하기 판별이 아닌 대리 기준입니다.
+
 Riot Games API를 활용하여 개인 League of Legends 매치 데이터를 수집하고,  
 플레이 지표와 승패 간의 관계를 분석한 데이터 분석 프로젝트입니다.
 
