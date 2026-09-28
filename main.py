@@ -1,8 +1,32 @@
 import os
+from pathlib import Path
 import time
 import requests
 import pandas as pd
 from dotenv import load_dotenv
+
+
+def extract_team_composition(participants, me):
+    """본인을 제외한 아군과 적군의 챔피언·포지션을 저장한다."""
+    composition = {}
+    role_order = {role: index for index, role in enumerate(
+        ["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY"]
+    )}
+    for side, same_team, size in [("ally", True, 4), ("enemy", False, 5)]:
+        players = [
+            player for player in participants
+            if player["puuid"] != me["puuid"]
+            and (player["teamId"] == me["teamId"]) == same_team
+        ]
+        players.sort(key=lambda p: (
+            role_order.get(p.get("teamPosition", ""), 99),
+            p.get("participantId", 0)
+        ))
+        for index in range(size):
+            player = players[index] if index < len(players) else {}
+            composition[f"{side}_{index + 1}_champion"] = player.get("championName", "")
+            composition[f"{side}_{index + 1}_position"] = player.get("teamPosition", "")
+    return composition
 
 
 # ==========================================
@@ -11,7 +35,7 @@ from dotenv import load_dotenv
 
 print("프로그램 시작")
 
-load_dotenv()
+load_dotenv(Path(__file__).resolve().with_name(".env"), override=True)
 
 API_KEY = os.getenv("RIOT_API_KEY")
 
@@ -20,6 +44,9 @@ TAG_LINE = "KR1"
 
 # 가져올 게임 수
 GAME_COUNT = 500
+
+# 개인/2인 랭크만 수집
+QUEUE_ID = 420
 
 HEADERS = {
     "X-Riot-Token": API_KEY
@@ -141,6 +168,7 @@ for start in range(
         f"matches/by-puuid/{puuid}/ids"
         f"?start={start}"
         f"&count={count}"
+        f"&queue={QUEUE_ID}"
     )
 
 
@@ -225,6 +253,10 @@ for index, match_id in enumerate(
 
 
     info = match_data["info"]
+
+    if info.get("queueId") != QUEUE_ID:
+        print("솔로랭크가 아닌 경기 → 건너뜀")
+        continue
 
 
     # ======================================
@@ -352,6 +384,10 @@ for index, match_id in enumerate(
     # ======================================
 
     results.append({
+
+        "queue_id": QUEUE_ID,
+        "game_version": info.get("gameVersion", ""),
+        **extract_team_composition(info["participants"], me),
 
         "match_id":
             match_id,
@@ -499,9 +535,8 @@ df = df.sort_values(
 # 5. CSV 저장
 # ==========================================
 
-file_name = (
-    "my_lol_games.csv"
-)
+file_name = Path(__file__).resolve().parent / "data" / "processed" / "my_lol_games.csv"
+file_name.parent.mkdir(parents=True, exist_ok=True)
 
 
 df.to_csv(
